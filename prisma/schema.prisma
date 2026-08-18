@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model employee {
+  employee_id Int      @id @default(autoincrement())
+  fullname    String?
+  position    String
+  password    String?
+  username    String?  @unique(map: "Employee_username_key")
+  rental      rental[]
+}
+
+model rental {
+  rental_id     Int             @id @default(autoincrement())
+  customer_name String?         // 👈 ເພີ່ມ field ເກັບຊື່ລູກຄ້າ walk-in
+  phone         String?         // 👈 ເພີ່ມ field ເກັບເບີໂທລູກຄ້າ walk-in
+  user_id       Int?            // 👈 ປ່ຽນເປັນ Int? (ອະນຸຍາດໃຫ້ເປັນ null ໄດ້)
+  employee_id   Int
+  created_at    DateTime        @default(now())
+  status        String          @default("CHECKED_IN")
+  total_amount  Decimal         @db.Decimal(12, 2)
+  employee      employee        @relation(fields: [employee_id], references: [employee_id], map: "Rental_employee_id_fkey")
+  user          user?           @relation(fields: [user_id], references: [user_id], map: "Rental_user_id_fkey") // 👈 ປ່ຽນເປັນ user?
+  rental_detail rental_detail[]
+
+  @@index([employee_id], map: "Rental_employee_id_fkey")
+  @@index([user_id], map: "Rental_user_id_fkey")
+}
+
+model rental_detail {
+  rental_id      Int
+  room_id        Int
+  check_in_date  DateTime
+  check_out_date DateTime
+  rental         rental   @relation(fields: [rental_id], references: [rental_id], map: "Rental_detail_rental_id_fkey")
+  room           room     @relation(fields: [room_id], references: [room_id], map: "Rental_detail_room_id_fkey")
+
+  @@id([rental_id, room_id])
+  @@index([room_id], map: "Rental_detail_room_id_fkey")
+}
+
+model room {
+  room_id       Int             @id @default(autoincrement())
+  type_id       Int
+  status        String          @default("AVAILABLE")
+  room_number   String          @unique(map: "Room_room_number_key")
+  rental_detail rental_detail[]
+  room_type     room_type       @relation(fields: [type_id], references: [type_id], map: "Room_type_id_fkey")
+
+  @@index([type_id], map: "Room_type_id_fkey")
+}
+
+model room_type {
+  type_id   Int     @id @default(autoincrement())
+  type_name String
+  price     Decimal @db.Decimal(12, 2)
+  room      room[]
+}
+
+model user {
+  user_id    Int      @id @default(autoincrement())
+  fullname   String
+  phone      String   @unique(map: "User_phone_key")
+  password   String
+  created_at DateTime @default(now())
+  rental     rental[]
+}
