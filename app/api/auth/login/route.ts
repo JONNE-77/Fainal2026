@@ -25,6 +25,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Username ຫຼື Password ບໍ່ຖືກຕ້ອງ" }, { status: 401 });
     }
 
+    if (!employee.password) {
+      return NextResponse.json({ message: "Username ຫຼື Password ບໍ່ຖືກຕ້ອງ" }, { status: 401 });
+    }
+
     const isValidPassword = await bcrypt.compare(password, employee.password);
     if (!isValidPassword) {
       return NextResponse.json({ message: "Username ຫຼື Password ບໍ່ຖືກຕ້ອງ" }, { status: 401 });

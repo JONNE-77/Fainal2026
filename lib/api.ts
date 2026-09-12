@@ -18,10 +18,11 @@ export async function apiFetch<T>(
     },
   });
 
-  const data = await response.json();
+  const contentType = response.headers.get('content-type') || '';
+  const data = contentType.includes('application/json') ? await response.json() : null;
 
   if (!response.ok) {
-    throw new Error(data.message || 'ເກີດຂໍ້ຜິດພາດໃນການດຶງຂໍ້ມູນ');
+    throw new Error(data?.message || data?.error || `Request failed with status ${response.status}`);
   }
 
   return data;

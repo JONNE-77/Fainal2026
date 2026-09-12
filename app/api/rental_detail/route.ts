@@ -6,8 +6,8 @@ import { z } from 'zod';
 export const rentalDetailSchema = z.object({
   rental_id: z.number().int(),
   room_id: z.number().int(),
-  Check_in_date: z.string().transform((str) => new Date(str)),
-  Check_out_date: z.string().transform((str) => new Date(str)),
+    check_in_date: z.string().transform((str) => new Date(str)),
+    check_out_date: z.string().transform((str) => new Date(str)),
 });
 
 export async function GET() {
@@ -17,8 +17,8 @@ export async function GET() {
           select: {
             rental_id: true,
             room_id: true,
-            Check_in_date: true,
-            Check_out_date: true,
+            check_in_date: true,
+            check_out_date: true,
             room: { select: { status: true } }
           }
         }).catch((err) => {

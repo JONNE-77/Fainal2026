@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { createRentalSchema } from "@/lib/validations";
+import bcrypt from "bcryptjs";
+import { randomUUID } from "node:crypto";
 
 // 1. GET: ດຶງຂໍ້ມູນປະວັດການເຊົ່າທັງໝົດ
 export async function GET() {
@@ -19,9 +21,12 @@ export async function GET() {
     });
 
     return NextResponse.json(rentals);
-  } catch (error) {
+  } catch (error: unknown) {
     return NextResponse.json(
-      { message: "ບໍ່ສາມາດດຶງຂໍ້ມູນການເຊົ່າໄດ້" },
+      {
+        message: "ບໍ່ສາມາດດຶງຂໍ້ມູນການເຊົ່າໄດ້",
+        error: error instanceof Error ? error.message : "Database error",
+      },
       { status: 500 }
     );
   }
@@ -45,17 +50,28 @@ export async function POST(req: NextRequest) {
     }
 
     // ດຶງ customer_name ແລະ phone ເພີ່ມເຕີມຈາກ validation
-    const { customer_name, phone, user_id, employee_id, total_amount, rooms } = validation.data;
+    const { customer_name, phone, employee_id, total_amount, rooms } = validation.data;
+    const checkInPassword = await bcrypt.hash(randomUUID(), 10);
 
     // 2.2 ທຳງານແບບ Database Transaction
     const transactionResult = await db.$transaction(async (tx) => {
+      const customer = await tx.user.upsert({
+        where: { phone },
+        update: { fullname: customer_name },
+        create: {
+          fullname: customer_name,
+          phone,
+          password: checkInPassword,
+        },
+      });
+
       
       // ບາດກ້າວທີ 1: ສ້າງຂໍ້ມູນການເຊົ່າຫຼັກ (Rental Master) ພ້ອມຂໍ້ມູນລູກຄ້າ
       const rental = await tx.rental.create({
         data: {
           customer_name, // 👈 ບັນທຶກຊື່-ນາມສະກຸນລູກຄ້າ
           phone,         // 👈 ບັນທຶກເບີໂທ
-          user_id: user_id || null,
+          user_id: customer.user_id,
           employee_id,
           total_amount,
           status: "CHECKED_IN",
@@ -94,9 +110,11 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(transactionResult, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
-      { message: error.message || "ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກ" },
+      {
+        message: error instanceof Error ? error.message : "ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກ",
+      },
       { status: 400 }
     );
   }
