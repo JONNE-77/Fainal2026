@@ -74,11 +74,16 @@ export async function GET() {
       { name: 'Maintenance', value: maintenanceRooms, color: '#ef4444' },
     ];
 
-    const totalRevenue = rentals.reduce((sum, item) => sum + Number(item.total_amount), 0);
+    // --- ຕຳແໜ່ງທີ່ປ່ຽນແປງ (ລຶບ unknown ອອກ) ---
+    const totalRevenue = rentals.reduce(
+      (sum, item) => sum + Number(item.total_amount),
+      0,
+    );
     const monthlyRevenue = monthlyRentals.reduce(
       (sum, item) => sum + Number(item.total_amount),
       0,
     );
+    // ----------------------------------------
 
     const recentRentals = await prisma.rental.findMany({
       take: 5,
